@@ -10,10 +10,17 @@
 <script src="module-loader.js"></script>
 
 <script>
-
-	require(["a"],function(a){
-		debugger
-		console.log(arguments)
+	require.config({
+		loadPath : "./",
+		mapping : {
+			"ab" : "a.js"
+		}
+	});
+	define("math",function(){
+		return Math;
+	})
+	require(["ab","math"],function(a,math){
+		document.body.innerHTML=JSON.stringify(a)+Math.random();
 	})
 </script>
 </body>

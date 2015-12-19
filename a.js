@@ -1,6 +1,6 @@
-define(["c"],function(c){
+define("ab",function(c){
 	return {
-		c:c,
+		c:c||34,
 		b:{
 			age:23
 		}

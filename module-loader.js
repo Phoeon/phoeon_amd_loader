@@ -2,6 +2,10 @@
 	var doc = root.document,
 		modules = {},
 		listeners = {},
+		defaultCfg = {
+			loadPath:"/",
+			mapping : {}
+		},
 		Event = {
 			emit : function(type,arg){
 				setTimeout(function(){
@@ -42,28 +46,34 @@
 		}
 	}
 	
-	function __define(deps,cb,exec){
+	function __define(name,deps,cb,exec){
+
 		var mNode = document.currentScript,
-			mName = mNode.getAttribute("data-module-name");
-		var module = exec?new Module(null,deps,cb):modules[mName];
+			mName = mNode.getAttribute("data-module-name")||name,
+			module;
+		module = exec?new Module(mName,deps,cb):(modules[mName]||new Module(mName,deps,cb));
 		module.cb=cb;
 		module.deps=deps;
 		module.waitDeps=deps.length;
 		module.exec=exec;
+		module.path=mNode.src;
+		name&&(modules[name]=module);
 		__loadDeps(module,deps);	
 	}
 	function __loadDeps(module,deps){
+		if(!deps.length)module.loaded=true;
 		deps.forEach(function(mName){
-			if(!modules[mName]){
+			var depModule = modules[mName];
+			if(!depModule){
 				__createScriptNode(mName);
 				Event.on(mName,module,module.__update);
 			}
-			else if(modules[mName].status){module.__update()};
+			else if(depModule.loaded){module.__update()};
 		});
 	}
 	function __createScriptNode(mName){
 		var mNode = doc.createElement("script");
-		mNode.src=mName+".js";
+		mNode.src=defaultCfg.mapping[mName]||(mName+".js");
 		mNode.setAttribute("data-module-name",mName);
 		var module = new Module(mName);
 		modules[mName] = module;
@@ -74,11 +84,24 @@
 		return module;
 	}
 	// ********************************************************************
-	var define = function(deps,cb){
-		__define(deps,cb);
+	var define = function(mName,deps,cb){
+		var args = arguments.length;
+		if(args===2){
+			cb=deps;
+			deps = (typeof mName==="string")?[]:mName;
+			mName = (typeof mName==="string")?mName:null;
+		}
+		__define(mName ,deps,cb);
 	}
 	var require = function(deps,cb){
-		__define(deps,cb,true);
+		__define(null,(typeof deps==="string")?[deps]:deps,cb,true);
+	}
+	require.config = function(cfg){
+		cfg||(cfg={});
+		for(var k in cfg){
+			defaultCfg[k]=cfg[k];
+		}
+		return defaultCfg;
 	}
 	root.define=define;
 	root.require=require;
